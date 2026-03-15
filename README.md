@@ -43,10 +43,27 @@ Create UI prototypes for websites, dashboards, desktop apps, or mobile apps usin
 - Realistic, domain-appropriate placeholder content
 - WCAG AA accessibility compliance
 
+### logo-creator
+
+Create original logos from text briefs, reference images, or both, then package editable and export-ready brand assets. Supports SVG-first delivery plus PNG, JPG, and favicon export workflows.
+
+**Use when:**
+- Creating an application or startup logo
+- Designing an app icon plus wordmark system
+- Refreshing an existing logo from references
+- Exporting a logo package with SVG, PNG, JPG, and favicon outputs
+- Preparing logo variants for web, app, and document usage
+
+**Key features:**
+- Mixed input routing for text briefs and reference images
+- 2-3 direction proposal workflow before finalization
+- SVG-first deliverables with practical logo variants
+- Export script for PNG, JPG, and favicon packaging
+
 ## Installation
 
 ```bash
-npx skills add zhifei/skills
+npx skills add nodew/skills
 ```
 
 ## Usage

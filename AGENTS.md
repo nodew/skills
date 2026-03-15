@@ -92,3 +92,10 @@ Creates polished UI prototypes using HTML and TailwindCSS. Always establishes de
 
 - Entry: `skills/ui-prototype/SKILL.md`
 - References: `platform-guidelines.md`, `app-guidelines.md`, `web-guidelines.md`, `desktop-guidelines.md`
+
+### logo-creator
+Creates original logos from text briefs, reference images, or both, then packages editable and export-ready brand assets including SVG, PNG, JPG, and favicon outputs.
+
+- Entry: `skills/logo-creator/SKILL.md`
+- Scripts: `export-logo-assets.cjs` (lib: `export-logo-assets-lib.cjs`)
+- References: `input-routing.md`, `logo-directions.md`, `delivery-spec.md`
