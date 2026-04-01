@@ -1,12 +1,12 @@
 ---
 name: logo-creator
-description: Create original application and brand logos from a text brief, reference images, or both, then package usable delivery assets including SVG, PNG, JPG, and favicon outputs. Use this whenever the user asks for a logo, app icon, brand mark, wordmark, lockup, favicon, or a reusable logo asset bundle, even if they only mention an app launch, startup branding, or "make me a logo" without naming file formats.
+description: Create original application and brand logos from a text brief, reference images, or both, then deliver SVG masters and package additional assets such as PNG, JPG, and favicon outputs when explicitly requested. Use this whenever the user asks for a logo, app icon, brand mark, wordmark, lockup, favicon, or a reusable logo asset bundle, even if they only mention an app launch, startup branding, or "make me a logo" without naming file formats.
 argument-hint: "[brand brief, app name, reference image path, or export request]"
 ---
 
 # Logo Creator
 
-Create production-ready logo systems from natural language input, reference images, or both, and ship them as a usable asset package.
+Create production-ready logo systems from natural language input, reference images, or both, and deliver SVG-first logo assets with optional export packaging when requested.
 
 ## Scope
 
@@ -62,12 +62,13 @@ Ask follow-up questions only when missing information would materially change th
 Routing:
 
 - If the user only wants exports for existing SVGs, skip concept development and go straight to packaging.
+- If the user explicitly requests specific export formats (PNG, JPG, favicon, asset bundle), note this for step 5.
 - If the brief is strong enough, move directly to concept directions.
 - If the brief is weak but recoverable, ask for the smallest missing set and continue.
 
-### 2. Set directions
+### 2. Set directions and dispatch parallel design
 
-When the user needs ideation, propose 2-3 directions that differ structurally, not just stylistically. For each direction, include:
+When the user needs ideation, propose 3-5 directions that differ structurally, not just stylistically. Default to 3 directions. Expand to 4-5 only when the brief clearly supports additional, genuinely distinct concepts. For each direction, include:
 
 - a one-line concept summary
 - why it fits the brand or product
@@ -75,16 +76,24 @@ When the user needs ideation, propose 2-3 directions that differ structurally, n
 
 Typical direction families:
 
-- symbol-led
+- geometric symbol-led
 - monogram or letterform-led
-- emblem or combination-led
+- negative-space effect-led
+- contained emblem-led
+- compound-shape or modular-system-led
 
-Recommend one direction by default.
+Once the directions are defined, dispatch one subagent per direction to build the mark and lockups in parallel. Each subagent receives:
 
-- If the user wants to choose, wait for selection.
-- If the user says to pick, or gives no preference signal, state the recommended direction and proceed.
+- the brand brief and parsed context from step 1
+- the assigned concept direction
+- instruction that the direction must be structurally distinct from the others, not just a styling variation
+- references to read (`references/geometry.md`, `references/typography.md`, `references/lockups.md`)
+- the output path for its variant set
+- instruction to produce SVG deliverables only (no raster export unless the user explicitly requested it)
 
-### 3. Build the mark
+Present all completed directions to the user for selection. Do not pre-select a winner — let the user compare and choose.
+
+### 3. Build the mark (per direction, via subagent)
 
 Read `references/geometry.md` before constructing the icon.
 
@@ -96,7 +105,7 @@ Build from simple geometric logic:
 4. Check that the symbol still works at small sizes.
 5. Keep the icon in a square container without stretching it.
 
-### 4. Build lockups
+### 4. Build lockups (per direction, via subagent)
 
 Read `references/typography.md` before choosing type treatment for lockups.
 Read `references/lockups.md` before constructing variants.
@@ -105,9 +114,11 @@ Choose a type direction that supports the symbol instead of competing with it. K
 
 Create the variants that are actually useful for the brief. At minimum, provide a symbol-only mark and one primary lockup. Add horizontal or vertical variants when they improve usability across product, web, or document contexts.
 
-### 5. Package and export
+### 5. Package and export (only when requested)
 
-Use `scripts/export-logo-assets.cjs` once the SVG sources are ready.
+By default, deliver SVG files only. Do not run the export pipeline unless the user explicitly asks for raster formats (PNG, JPG), favicons, or a full asset bundle at the start of the conversation.
+
+When export is requested, use `scripts/export-logo-assets.cjs` once the user has selected a direction and the SVG sources are finalized.
 
 Single-input example:
 
@@ -137,22 +148,30 @@ Do not claim raster files exist unless the script actually produced them.
 
 When you deliver work, keep the response compact and concrete:
 
-1. State the chosen concept direction.
-2. Summarize the mark and type treatment decisions.
-3. List the variants delivered.
-4. List the formats actually produced.
-5. Call out any skipped exports or constraints.
+1. List all directions produced (with one-line concept summary each).
+2. For each direction, summarize the mark and type treatment decisions.
+3. List the variants delivered per direction.
+4. Ask the user to select a direction (or refine).
+5. After selection, list final formats produced and call out any skipped exports.
 
-Example:
+Example (initial delivery):
 
 ```text
-Direction:
-- Symbol-led concept based on a folded triangle that suggests forward motion and precision.
+Directions produced:
 
-Delivered:
-- mark
-- horizontal
-- vertical
+1. Folded Triangle — forward motion and precision, geometric symbol-led.
+2. Negative-Space Letter — the initial letter forms a hidden symbol, negative-space effect-led.
+3. Geometric Emblem — structured badge enclosing a simplified icon, contained emblem-led.
+
+Each direction includes: mark + horizontal + vertical lockups (SVG).
+
+Please select a direction to finalize, or request changes.
+```
+
+Example (after selection, with export requested):
+
+```text
+Finalized: Direction 1 — Folded Triangle (geometric symbol-led)
 
 Formats produced:
 - SVG for all variants
@@ -174,8 +193,10 @@ Before delivering, verify:
 - [ ] All text in SVGs is outlined (no live text).
 - [ ] The chosen variants match the user's real usage needs.
 - [ ] The SVGs follow the implementation guidance in `references/geometry.md`.
-- [ ] Any claimed exports are present in `export-manifest.json`.
+- [ ] Any claimed exports are present in `export-manifest.json` (when export was requested).
 - [ ] Missing variants or formats are explained.
+- [ ] All directions were built in parallel via subagents.
+- [ ] The user was given a choice between directions before finalizing.
 
 ## Anti-Patterns
 
