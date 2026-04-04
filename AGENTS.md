@@ -92,4 +92,4 @@ Extracts embedded subtitle tracks from video files, translates them via subagent
 
 - Entry: `skills/subtitle-translator/SKILL.md`
 - Scripts: `translate-video-subtitles.cjs`
-- References: `subagent-translator-prompt.md`, `container-toolchain.md`
+- References: `subagent-translator-prompt.md`, `subagent-reviewer-prompt.md`, `container-toolchain.md`

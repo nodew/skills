@@ -73,14 +73,27 @@ Use subagents to translate the extracted subtitle text. The reusable prompt temp
 - Formatting control codes and markup — do not translate as text.
 - Subtitle punctuation, music markers, and speaker prefixes — keep when meaningful.
 - Prefer natural, idiomatic target-language rendering over word-for-word glosses.
+- Translate slang and idioms into target-language equivalents — never translate literally.
+- Maintain consistent character voice throughout each speaker's lines.
+
+### 5. Review
+
+After translation, launch a reviewer subagent to check and correct the translated output. The reviewer prompt template is in [references/subagent-reviewer-prompt.md](./references/subagent-reviewer-prompt.md).
+
+The reviewer:
+
+- Compares the translated file against the source for context fidelity, idiom handling, character voice consistency, terminology, naturalness, and structural integrity.
+- Produces a corrected subtitle file and a brief review report with correction count and categories.
+- If the correction count is zero, the translated file is used as-is.
+- If corrections were made, the reviewed file replaces the translated file as the final deliverable.
 
 Stop here if the user only asked for subtitle output.
 
-### 5. Remux (optional)
+### 6. Remux (optional)
 
 Skip unless the user explicitly asks for a remuxed video file. Run the automation script in `remux` mode or use the appropriate toolchain command. See [references/container-toolchain.md](./references/container-toolchain.md) for container-specific remux details.
 
-### 6. Validate
+### 7. Validate
 
 **Subtitle-only deliverable:**
 
@@ -96,7 +109,7 @@ Skip unless the user explicitly asks for a remuxed video file. Run the automatio
 3. Translated subtitle stream appears with correct language metadata.
 4. Any container or styling compromises reported to user.
 
-## Automation Script
+## Script Reference
 
 `./scripts/translate-video-subtitles.cjs`
 
