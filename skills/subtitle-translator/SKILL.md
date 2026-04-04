@@ -1,178 +1,121 @@
 ---
 name: subtitle-translator
-description: Use when the user asks to translate embedded subtitles, export subtitle tracks, or remux translated subtitles for MKV, MP4, MOV, M4V, or similar video files. Use this even when the user expects the current agent to translate subtitle text directly rather than calling an external translator tool.
+description: Translate embedded subtitles, extract subtitle tracks, or remux translated subtitles for video files (MKV, MP4, MOV, M4V). Trigger phrases include "translate subtitles", "export subtitles", "extract srt", "subtitle translation".
 argument-hint: "[video path, source locale, target locale]"
 ---
 
 # Subtitle Translator
 
-Extract an embedded subtitle track from a video, translate it to a target language, and mux the translated subtitle back without re-encoding the video or audio streams.
+Extract an embedded subtitle track from a video, translate it to a target language, and deliver a translated subtitle file. Only remux the translated subtitle back into a video container when the user explicitly asks.
 
-This skill handles subtitle-driven translation only — not dubbing or speech-to-text. If the file has no usable subtitle track, say so explicitly and offer an OCR or ASR alternative only if the user wants that.
+Handles subtitle-driven translation only — not dubbing or speech-to-text. If the file has no usable subtitle track, say so explicitly.
 
 ## When to Use
 
 - Translate embedded subtitles to another language
 - Extract or export subtitle tracks from video files
-- Select a preferred source-language subtitle when multiple tracks exist
-- Remux translated subtitles back into a video container
+- Produce translated subtitle files (default) or remux them back into video
 - Handle multilingual subtitle workflows across MKV, MP4, MOV, M4V, or other containers
 
 ## Core Rules
 
-1. Always probe the container and subtitle streams before any action.
-2. Prefer a user-specified source-language text subtitle when multiple tracks exist.
-3. Default to translating subtitle text with the current agent after extraction. Do not assume an external translator command is available.
-4. Never re-encode video or audio unless the user explicitly asks.
-5. Never overwrite the original file. Always write a new output file.
-6. Warn about container limitations before promising same-container output.
-7. Preserve timestamps, cue order, and structural markers during translation.
+1. Probe the container and subtitle streams before any action.
+2. Default to subtitle-file delivery; only remux when explicitly asked.
+3. Never re-encode video or audio unless the user explicitly asks.
+4. Never overwrite the original file — always write a new output.
+5. Preserve timestamps, cue order, and structural markers during translation.
+6. Delete temporary intermediate artifacts after success unless the user asks to keep them.
+7. Translate with subagents — do not assume an external translator tool is available.
 
 ## Subtitle Selection
 
-Choose the subtitle stream in this priority order:
+Priority order:
 
 1. Text-based track matching the user-specified source locale or language tag.
 2. Text-based track inferred from title metadata matching the source language.
 3. Default full-dialogue track in the source language when several matches exist.
 4. Non-forced full-dialogue track over a forced-only track for the same language.
-5. If no matching text track exists, ask whether to use another language or stop.
+5. If no matching text track exists, ask the user whether to use another language or stop.
 
-Source-language defaults:
+Defaults: source locale = `en` when not specified. Accept ISO 639-2 tags (`eng`, `jpn`, `spa`, `zho`).
 
-- Use the user-specified source locale when provided.
-- Default to English (`en`) when not specified.
-- Accept explicit ISO 639-2 tags (`eng`, `jpn`, `spa`, `zho`) for precise matching.
-
-### Text-based codecs (translate directly)
-
-`subrip`/`srt`, `ass`/`ssa`, `webvtt`, `mov_text`
-
-### Image-based codecs (require OCR first)
-
-`hdmv_pgs_subtitle`, `dvd_subtitle`, `dvb_subtitle`
-
-If the best available subtitle is image-based, state that OCR is required and that accuracy may drop. Do not silently proceed as if it were text.
-
-## Container Rules
-
-| Container | Extraction | Remux | Notes |
-|-----------|-----------|-------|-------|
-| MKV | Full support | Full support | Best for preserving styling and multiple tracks |
-| MP4/MOV/M4V | Via ffmpeg | `mov_text` only | ASS/SSA styling lost; warn the user |
-| AVI/TS/WMV/FLV | Partial via ffmpeg | Prefer MKV output | Subtitle support is inconsistent |
-
-Output container logic:
-
-- MKV input → MKV output.
-- MP4-family input → same container by default, with `mov_text` codec and a styling loss warning.
-- Other containers → default to MKV unless the user explicitly requests otherwise.
-
-### Toolchain by container
-
-- **MKV**: prefer `mkvmerge --identify` (probe) → `mkvextract` (extract) → `mkvmerge` (remux). Track IDs are consistent across the mkvtoolnix suite.
-- **Non-MKV**: use `ffprobe` (probe) → `ffmpeg` (extract and remux).
-- Do not mix `ffprobe` stream indices with `mkvextract` track IDs — they use different numbering systems.
+For subtitle codec types, container capabilities, and toolchain commands, see [references/container-toolchain.md](./references/container-toolchain.md).
 
 ## Workflow
 
 ### 1. Probe
 
-- **MKV**: run `mkvmerge --identify --identification-format json <file>` to inspect tracks, codecs, language tags, track names, and default/forced flags.
-- **Non-MKV**: run `ffprobe` to inspect container format, all streams, codec names, language tags, titles, and default/forced flags.
+Run the automation script in `probe` mode or use the appropriate toolchain command. Inspect tracks, codecs, language tags, track names, and default/forced flags.
 
 ### 2. Select subtitle stream
 
-Apply the selection policy above. Before extraction, summarize: stream index, detected language, codec, and whether it is text-based or image-based. If ambiguous, ask one focused question.
+Apply the selection priority above. Summarize the chosen stream: index, language, codec, text-based or image-based. If ambiguous, ask one focused question.
 
 ### 3. Extract
 
-- **MKV**: use `mkvextract tracks <file> <track_id>:<output_path>`. The track ID comes from `mkvmerge --identify`, so there is no numbering mismatch.
-- **Non-MKV**: use `ffmpeg -map 0:<stream_index>` for extraction.
-
-Format choice:
-
-- Keep `ass`/`ssa` if style preservation matters and the output will remain MKV.
-- Convert to `srt` for broad compatibility.
+Run the automation script in `extract` mode or use the appropriate toolchain command. Choose `srt` for broad compatibility or keep `ass`/`ssa` when style preservation matters and the output will remain MKV.
 
 ### 4. Translate
 
-Translate only the text content. The user must specify both source and target locale.
+Use subagents to translate the extracted subtitle text. The reusable prompt template is in [references/subagent-translator-prompt.md](./references/subagent-translator-prompt.md).
 
-Default path:
+**Chunking strategy:**
 
-1. Extract the subtitle track to a text subtitle file.
-2. Read the extracted subtitle file in the workspace.
-3. Translate the spoken text with the current agent.
-4. Write a new translated subtitle file, keeping cue numbers, timestamps, and line structure intact.
-5. Pass that translated subtitle file into the remux step.
+- One subagent per full file when the file is reasonably sized.
+- For oversized files, split at cue boundaries and assign each chunk to a parallel subagent.
+- Merge chunk outputs in original order without adding, dropping, or reordering cues.
+- Delete chunk files after a successful merge unless the user asked to keep them.
 
-Preserve:
+**Preservation rules:**
 
-- Cue numbers
-- Timestamps exactly
-- Structural separators and format control codes
+- Cue numbers, timestamps, and structural separators — keep exactly.
+- Speaker separation, line breaks, and multi-speaker line splits — preserve as-is.
+- Formatting control codes and markup — do not translate as text.
+- Subtitle punctuation, music markers, and speaker prefixes — keep when meaningful.
+- Prefer natural, idiomatic target-language rendering over word-for-word glosses.
 
-Quality rules:
+Stop here if the user only asked for subtitle output.
 
-- Do not merge or split cues unless absolutely necessary.
-- Preserve speaker separation and line breaks.
-- Do not translate formatting control codes as normal text.
+### 5. Remux (optional)
 
-Direct-agent translation rules:
-
-- Translate subtitle payloads yourself instead of delegating by default.
-- Keep subtitle punctuation, music markers, and speaker prefixes when they carry meaning.
-- If a cue contains multiple speakers on separate lines, keep the same line split.
-- If a term is ambiguous, prefer a natural target-language rendering over a word-for-word gloss.
-
-### 5. Remux
-
-- **MKV**: use `mkvmerge -o <output> <input> --language <tid>:<tag> --track-name <tid>:<title> <translated_subtitle>`. Preserves all original tracks and appends the translated one with correct metadata.
-- **Non-MKV**: use `ffmpeg -c copy` with `-map 0 -map 1:0` and subtitle metadata flags.
-
-When adding the new subtitle stream:
-
-- Set the language metadata to the target language tag.
-- Set a clear stream title, e.g. `Translated from en (es-ES)`.
-- Keep all original subtitle tracks unless the user explicitly asks to replace them.
+Skip unless the user explicitly asks for a remuxed video file. Run the automation script in `remux` mode or use the appropriate toolchain command. See [references/container-toolchain.md](./references/container-toolchain.md) for container-specific remux details.
 
 ### 6. Validate
 
-Before reporting completion, verify:
+**Subtitle-only deliverable:**
 
-1. The output file exists and is not empty.
+1. Translated file exists and is non-empty.
+2. Cue numbers, timestamps, and separators preserved.
+3. Output path is distinct from the extracted source.
+4. Temporary files cleaned up.
+
+**Remuxed video deliverable** (all of the above, plus):
+
+1. Output video file exists and is non-empty.
 2. Video and audio streams were copied, not re-encoded.
-3. The translated subtitle stream appears in the output with correct language metadata.
-4. Any container or styling compromise has been reported.
-
-## Image-Based Subtitle OCR
-
-When the selected subtitle is image-based:
-
-1. Extract the image-based stream.
-2. Run OCR to produce editable text.
-3. Warn the user about OCR accuracy risks before proceeding.
-4. Translate the OCR result.
-5. Mux the translated text subtitle back into the video.
-6. Preserve the original image-based track unless the user explicitly wants it removed.
-
-The automation script does not handle OCR — this branch requires manual orchestration.
+3. Translated subtitle stream appears with correct language metadata.
+4. Any container or styling compromises reported to user.
 
 ## Automation Script
 
 `./scripts/translate-video-subtitles.cjs`
 
-Automates the mechanical parts of the workflow in three explicit modes: `probe`, `extract`, and `remux`.
+Three modes: `probe`, `extract`, `remux`. Requires `mkvtoolnix` for MKV files and `ffprobe`/`ffmpeg` for non-MKV files. Does not handle image-based subtitle OCR or translation — only mechanical extraction and muxing.
 
-Requires `mkvmerge` and `mkvextract` (from mkvtoolnix) for MKV files, and `ffprobe`/`ffmpeg` for non-MKV files. Does not handle image-based subtitle OCR.
+Preferred workflow:
 
-Preferred workflow with this skill:
+1. `probe` — inspect subtitle streams and get a recommended track.
+2. `extract` — export the preferred source-language subtitle track.
+3. Translate the extracted file with subagents.
+4. `remux` — (only if requested) mux the translated subtitle back into the video.
+5. Run the script in `remux` mode with `--translated-subtitle` only when the user explicitly wants the translated subtitle added back into a video file.
 
-1. Run the script in `probe` mode to inspect available subtitle streams.
-2. Run the script in `extract` mode to export the preferred source subtitle track.
-3. Translate the extracted subtitle file with the current agent.
-4. Run the script in `remux` mode with `--translated-subtitle` to append the translated track.
+If subagents are used, the preferred orchestration is:
+
+1. Probe and extract with the helper script when needed.
+2. Translate full subtitle files directly with subagents when each file is reasonably sized.
+3. For oversized subtitle files, split at cue boundaries, translate chunks in parallel subagents, then merge chunks back into the final subtitle file.
+4. Delete temporary extracted subtitle files and chunk files after successful translation when they are no longer needed.
 
 ```bash
 node skills/subtitle-translator/scripts/translate-video-subtitles.cjs \
@@ -201,6 +144,9 @@ Output naming: when `--output` is omitted, derives from the source filename plus
 - Guessing subtitle language without probing metadata
 - Altering timestamps or cue ordering during translation
 - Burning subtitles into video when the user asked for a muxed track
+- Remuxing by default when the user only asked for translated subtitle files
+- Routing subtitle translation through the current agent or a custom helper script when subagent-based text translation is sufficient
+- Leaving extracted source subtitles or temporary chunk files behind after successful translation when the user did not ask to keep them
 - Overwriting the source video file
 - Promising MP4-family containers will preserve ASS styling
 - Treating image-based subtitles as translatable text without OCR
@@ -211,7 +157,9 @@ Output naming: when `--output` is omitted, derives from the source filename plus
 - [ ] The selected subtitle stream follows the source-language preference.
 - [ ] Text vs image-based subtitles were correctly distinguished.
 - [ ] Translation preserved timestamps and subtitle structure.
+- [ ] The final translated subtitle file was written successfully.
+- [ ] Temporary extracted subtitle files and chunk files were removed unless the user asked to keep them.
 - [ ] The original video file was not overwritten.
-- [ ] The translated subtitle was muxed into a new output file.
-- [ ] Subtitle metadata reflects the target locale.
-- [ ] Container limitations were explained if relevant.
+- [ ] If remux was requested, the translated subtitle was muxed into a new output file.
+- [ ] If remux was requested, subtitle metadata reflects the target locale.
+- [ ] If remux was requested, container limitations were explained if relevant.

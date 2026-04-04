@@ -86,3 +86,10 @@ Creates production-ready logo systems from text briefs, reference images, or bot
 - Entry: `skills/logo-creator/SKILL.md`
 - Scripts: `export-logo-assets.cjs` (lib: `export-logo-assets-lib.cjs`)
 - References: `geometry.md`, `typography.md`, `lockups.md`, `modernism.md`
+
+### subtitle-translator
+Extracts embedded subtitle tracks from video files, translates them via subagents, and optionally remuxes translated subtitles back into the container. Supports MKV, MP4, MOV, M4V.
+
+- Entry: `skills/subtitle-translator/SKILL.md`
+- Scripts: `translate-video-subtitles.cjs`
+- References: `subagent-translator-prompt.md`, `container-toolchain.md`

@@ -8,6 +8,7 @@ const TEXT_SUBTITLE_CODECS = new Set(['subrip', 'srt', 'ass', 'ssa', 'webvtt', '
 const IMAGE_SUBTITLE_CODECS = new Set(['hdmv_pgs_subtitle', 'dvd_subtitle', 'dvb_subtitle', 'S_HDMV/PGS', 'S_VOBSUB']);
 
 const MKV_CODEC_NORMALIZE = {
+  'SubRip/SRT': 'subrip',
   'S_TEXT/UTF8': 'subrip',
   'S_TEXT/SSA': 'ssa',
   'S_TEXT/ASS': 'ass',
