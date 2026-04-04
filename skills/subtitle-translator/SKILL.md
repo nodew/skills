@@ -22,10 +22,12 @@ Handles subtitle-driven translation only — not dubbing or speech-to-text. If t
 1. Probe the container and subtitle streams before any action.
 2. Default to subtitle-file delivery; only remux when explicitly asked.
 3. Never re-encode video or audio unless the user explicitly asks.
-4. Never overwrite the original file — always write a new output.
+4. Never overwrite the original file during processing — write to a temporary or suffixed path first.
 5. Preserve timestamps, cue order, and structural markers during translation.
 6. Delete temporary intermediate artifacts after success unless the user asks to keep them.
 7. Translate with subagents — do not assume an external translator tool is available.
+8. Subtitle output naming: `<video-filename>.<target-locale>.<subtitle-ext>` (e.g., `movie.zh-CN.srt`).
+9. Remux output: replace the original video file. Write to a temporary path first, then replace the original after validation succeeds.
 
 ## Subtitle Selection
 
@@ -61,9 +63,12 @@ Use subagents to translate the extracted subtitle text. The reusable prompt temp
 
 **Chunking strategy:**
 
-- One subagent per full file when the file is reasonably sized.
-- For oversized files, split at cue boundaries and assign each chunk to a parallel subagent.
-- Merge chunk outputs in original order without adding, dropping, or reordering cues.
+- **Small files** (≤ 200 cues): one subagent handles the full file.
+- **Medium files** (200–600 cues): split into chunks of ~200 cues, translate in parallel subagents.
+- **Large files** (> 600 cues): split into chunks of ~200 cues each, translate all chunks in parallel subagents.
+- Always split at cue boundaries — never break mid-cue.
+- Each chunk should include 3–5 cues of overlap context from the previous chunk (marked as context-only, not to be translated) so the subagent can maintain continuity of tone, terminology, and character voice across chunk boundaries.
+- Merge chunk outputs in original order without adding, dropping, or reordering cues. Remove overlap context lines during merge.
 - Delete chunk files after a successful merge unless the user asked to keep them.
 
 **Preservation rules:**
