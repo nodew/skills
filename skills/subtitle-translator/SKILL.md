@@ -29,6 +29,81 @@ Handles subtitle-driven translation only — not dubbing or speech-to-text. If t
 8. Subtitle output naming: `<video-filename>.<target-locale>.<subtitle-ext>` (e.g., `movie.zh-CN.srt`).
 9. Remux output: replace the original video file. Write to a temporary path first, then replace the original after validation succeeds.
 
+## Prerequisites
+
+Before starting, verify that required tools are installed. Check each tool and install any that are missing.
+
+### Node.js
+
+Required to run `scripts/translate-video-subtitles.cjs`.
+
+```bash
+# Check
+node --version
+
+# Windows (winget)
+winget install OpenJS.NodeJS.LTS
+
+# macOS
+brew install node
+
+# Ubuntu/Debian
+sudo apt install nodejs npm
+```
+
+### mkvtoolnix (MKV files only)
+
+```bash
+# Check
+mkvmerge --version
+
+# Windows (winget)
+winget install MKVToolNix.MKVToolNix
+
+# macOS
+brew install mkvtoolnix
+
+# Ubuntu/Debian
+sudo apt install mkvtoolnix
+```
+
+### ffmpeg / ffprobe (non-MKV files)
+
+```bash
+# Check
+ffmpeg -version
+ffprobe -version
+
+# Windows (winget)
+winget install Gyan.FFmpeg
+
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt install ffmpeg
+```
+
+### GPAC / MP4Box (recommended for MP4/MOV diagnostics)
+
+MP4Box is not required for every translation run, but it is strongly recommended when MP4/MOV/M4V files have ambiguous subtitle-like tracks or when remux behavior needs to be validated before choosing a container strategy.
+
+```bash
+# Check
+MP4Box -version
+
+# Windows (winget)
+winget install GPAC.GPAC
+
+# macOS
+brew install gpac
+
+# Ubuntu/Debian
+sudo apt install gpac
+```
+
+If a required tool is missing and cannot be installed, inform the user and either stop with a clear explanation or fall back to a workflow that avoids the missing dependency.
+
 ## Subtitle Selection
 
 Priority order:
