@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents (Claude Code, Cursor, Copilot, e
 
 ## Repository Overview
 
-A collection of skills for AI coding agents. Skills are packaged instructions, references, scripts, and templates that extend agent capabilities for design system creation and UI prototyping.
+A collection of skills for AI coding agents. Skills are packaged instructions, references, scripts, and templates that extend agent capabilities across branding, UI prototyping, subtitle transcription, and subtitle translation workflows.
 
 ## Creating a New Skill
 
@@ -87,13 +87,18 @@ Creates production-ready logo systems from text briefs, reference images, or bot
 - Scripts: `export-logo-assets.cjs` (lib: `export-logo-assets-lib.cjs`)
 - References: `geometry.md`, `typography.md`, `lockups.md`, `modernism.md`
 
+### pencil-dev
+Designs structured product prototypes in pencil.dev and `.pen` files using a token-first, component-first workflow that keeps multi-page products reusable and themeable.
+
+- Entry: `skills/pencil-dev/SKILL.md`
+
 ### subtitle-transcribe
-Transcribes speech from video or audio files into timed subtitle files using Whisper (openai-whisper by default). Extracts audio via mkvextract (MKV) or ffmpeg (other formats), runs transcription, and delivers SRT/VTT/ASS output. Optionally remuxes back into the video container.
+Transcribes speech from video or audio files into timed subtitle files using Whisper (openai-whisper by default). Extracts audio via mkvextract (MKV) or ffmpeg (other formats), runs transcription, and delivers SRT/VTT/ASS output. Optionally remuxes back into the video container. GPAC/MP4Box is recommended when MP4/MOV subtitle-like tracks need clearer diagnostics.
 
 - Entry: `skills/subtitle-transcribe/SKILL.md`
 
 ### subtitle-translator
-Extracts embedded subtitle tracks from video files, translates them via subagents, and optionally remuxes translated subtitles back into the container. Supports MKV, MP4, MOV, M4V.
+Extracts embedded subtitle tracks from video files, translates them via subagents, and optionally remuxes translated subtitles back into the container. Supports MKV, MP4, MOV, M4V, and recommends GPAC/MP4Box when MP4-family subtitle tracks or remux behavior are ambiguous.
 
 - Entry: `skills/subtitle-translator/SKILL.md`
 - Scripts: `translate-video-subtitles.cjs`
